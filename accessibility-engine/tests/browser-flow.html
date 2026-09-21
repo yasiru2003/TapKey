@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><link rel="stylesheet" href="/src/liveRegion.css"><title>Accessibility browser flow</title></head>
+<body>
+  <input id="username" aria-label="Username">
+  <div id="tap-area" tabindex="0" role="group" aria-label="Spacebar secret input"></div>
+  <div id="result">pending</div>
+  <script type="module">
+    import { createLiveRegion, announceAuthState, createEarconPlayer, createKeyHandler } from '/src/index.js';
+    const results = [];
+    const region = createLiveRegion();
+    const frequencies = [];
+    class AudioContextMock {
+      currentTime = 0;
+      destination = {};
+      createOscillator() { return { frequency: { set value(v) { frequencies.push(v); } }, connect() {}, start() {}, stop() {} }; }
+      createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} }; }
+      async close() {}
+    }
+    const audio = createEarconPlayer({ AudioContextClass: AudioContextMock });
+    const area = document.querySelector('#tap-area');
+    const input = document.querySelector('#username');
+    const check = (condition, description) => { if (!condition) throw Error(description); results.push(description); };
+    const tap = createKeyHandler({ target: document.body,
+      onSpace: () => { audio.tap(); announceAuthState(region, 'pattern_ready'); },
+      onSubmit: () => { announceAuthState(region, 'factor2_pending'); },
+      onCancel: () => { announceAuthState(region, 'biometric_cancelled'); },
+    });
+    const key = (target, name, options = {}) => target.dispatchEvent(new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true, ...options }));
+    try {
+      announceAuthState(region, 'identity_acknowledged');
+      check(region.element.textContent.includes('Username received'), 'identity response announced');
+      key(input, ' ');
+      check(region.element.textContent.includes('Username received'), 'typing in username does not trigger tap');
+      key(area, ' ');
+      check(region.element.textContent.includes('Press Enter'), 'space records tap and announces next action');
+      check(frequencies.length === 0, 'audio remains private by default');
+      audio.setEnabled(true);
+      audio.setPrivateOutputConfirmed(true);
+      key(area, ' ');
+      key(area, ' ', { repeat: true });
+      check(frequencies.length === 1, 'confirmed private audio plays once, ignoring key repeat');
+      key(area, 'Enter');
+      check(region.element.textContent.includes('Checking'), 'enter announces pending verification');
+      announceAuthState(region, 'factor2_failure'); audio.failure();
+      check(region.element.getAttribute('role') === 'alert' && frequencies.length === 3, 'failure is urgent and has a tone');
+      announceAuthState(region, 'factor2_success'); audio.success();
+      check(region.element.getAttribute('role') === 'status' && frequencies.length === 5, 'factor success is announced and toned');
+      announceAuthState(region, 'biometric_pending');
+      check(region.element.textContent.includes('device biometric'), 'native biometric prompt is coordinated');
+      key(area, 'Escape');
+      check(region.element.textContent.includes('cancelled'), 'escape cancellation announced');
+      announceAuthState(region, 'authenticated');
+      check(region.element.textContent === 'Login successful.', 'full session success announced');
+      tap.destroy(); await audio.destroy(); region.destroy();
+      document.querySelector('#result').textContent = 'PASS: ' + results.join('; ');
+    } catch (error) {
+      document.querySelector('#result').textContent = 'FAIL: ' + error.message;
+    }
+  </script>
+</body>
+</html>

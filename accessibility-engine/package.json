@@ -1,0 +1,11 @@
+{
+  "name": "@tapkey/accessibility-engine",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": "./src/index.js",
+  "scripts": {
+    "test": "node --test",
+    "test:browser": "node tests/browser-flow.check.js",
+    "demo": "node demo/server.js"
+  }
+}
