@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TapKey — Factor 1 (WebAuthn) Local Test Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 26, 44, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+      padding: 2.5rem 1.5rem;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 1.5rem;
+    }
+
+    .header-title h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .badge-tag {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+
+    .header-title p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 0.35rem;
+    }
+
+    .btn-reset {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-reset:hover {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 840px) {
+      .grid-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-header h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    /* Session Gate Box */
+    .gate-control {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .gate-options {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    .gate-option {
+      flex: 1;
+      position: relative;
+    }
+
+    .gate-option input {
+      position: absolute;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .gate-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.6rem 0.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .gate-option input:checked + .gate-label.active {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--success);
+      color: #34d399;
+    }
+
+    .gate-option input:checked + .gate-label.expired {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: var(--warning);
+      color: #fbbf24;
+    }
+
+    .gate-option input:checked + .gate-label.missing {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--danger);
+      color: #f87171;
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 0.85rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 10px;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      margin-bottom: 0.75rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      color: white;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+    }
+
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      transform: translateY(-1px);
+    }
+
+    .status-toast {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+      display: none;
+    }
+
+    .status-toast.success {
+      display: block;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    .status-toast.error {
+      display: block;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+
+    /* Logs & Tables */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    th {
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      padding: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .tag-success {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+    }
+
+    .tag-fail {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+
+    .tag-blocked {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-title">
+        <h1>
+          🛡️ TapKey Factor 1 Test Suite
+          <span class="badge-tag">Yasiru 230076R</span>
+        </h1>
+        <p>Interactive verification harness for WebAuthn/FIDO2 biometrics and Design Choice D2 session gating.</p>
+      </div>
+      <button class="btn-reset" onclick="resetDatabase()">🔄 Reset DB State</button>
+    </header>
+
+    <!-- Session Gate Controller -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <h2>🎟️ Design Choice D2: PartialAuthSession Gate Simulator</h2>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+        Factor 1 strictly requires an active <code>PartialAuthSession</code> (created upon Factor 2 completion). Toggle states below to test gate enforcement:
+      </p>
+      <div class="gate-options">
+        <div class="gate-option">
+          <input type="radio" name="sessionState" id="gateActive" value="ACTIVE" checked onchange="updateSessionState('ACTIVE')" />
+          <label for="gateActive" class="gate-label active">
+            <span>🟢 Active Session</span>
+            <small style="opacity: 0.8;">Valid 5-min TTL</small>
+          </label>
+        </div>
+        <div class="gate-option">
+          <input type="radio" name="sessionState" id="gateExpired" value="EXPIRED" onchange="updateSessionState('EXPIRED')" />
+          <label for="gateExpired" class="gate-label expired">
+            <span>🟡 Expired Session</span>
+            <small style="opacity: 0.8;">TTL &gt; 300s</small>
+          </label>
+        </div>
+        <div class="gate-option">
+          <input type="radio" name="sessionState" id="gateMissing" value="MISSING" onchange="updateSessionState('MISSING')" />
+          <label for="gateMissing" class="gate-label missing">
+            <span>🔴 No Session</span>
+            <small style="opacity: 0.8;">Gate Missing / Bypassed</small>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ceremonies Grid -->
+    <div class="grid-layout">
+      <!-- Registration Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2>1️⃣ Biometric Registration</h2>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          Triggers <code>navigator.credentials.create()</code> to enroll your device's Touch ID, Windows Hello, or Passkey.
+        </p>
+        <button id="btnRegister" class="btn-action btn-primary" onclick="performRegistration()">
+          📲 Enroll Device Biometric
+        </button>
+        <div id="regToast" class="status-toast"></div>
+      </div>
+
+      <!-- Authentication Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2>2️⃣ Biometric Authentication</h2>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          Triggers <code>navigator.credentials.get()</code> to sign a server challenge using your enrolled biometric.
+        </p>
+        <button id="btnAuth" class="btn-action btn-secondary" onclick="performAuthentication()">
+          🔐 Verify Biometric Assertion
+        </button>
+        <div id="authToast" class="status-toast"></div>
+      </div>
+    </div>
+
+    <!-- Enrolled Credentials Table -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <h2>🔑 Enrolled Platform Credentials (<code>WebAuthnCredential</code>)</h2>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Credential ID</th>
+              <th>Sign Count</th>
+              <th>Transports</th>
+              <th>Registered At</th>
+            </tr>
+          </thead>
+          <tbody id="credentialsList">
+            <tr><td colspan="4" class="empty-state">No credentials enrolled yet. Use Step 1 above.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="card">
+      <div class="card-header">
+        <h2>📜 Real-Time Security Audit Logs (Hasini's <code>LoginAttempt</code>)</h2>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Factor</th>
+              <th>Ceremony</th>
+              <th>Outcome</th>
+              <th>Details / Reason</th>
+            </tr>
+          </thead>
+          <tbody id="logsList">
+            <tr><td colspan="5" class="empty-state">No audit logs recorded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { startRegistration, startAuthentication } = SimpleWebAuthnBrowser;
+
+    async function loadStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        
+        // Update Session Gate Radios
+        const radio = document.querySelector(`input[name="sessionState"][value="${data.sessionState}"]`);
+        if (radio) radio.checked = true;
+
+        // Render Credentials
+        const credBody = document.getElementById('credentialsList');
+        if (data.credentials && data.credentials.length > 0) {
+          credBody.innerHTML = data.credentials.map(c => `
+            <tr>
+              <td title="${c.id}">${c.id.substring(0, 24)}...</td>
+              <td><span class="badge-tag">#${c.signCount}</span></td>
+              <td>${c.transports ? c.transports.join(', ') : 'internal'}</td>
+              <td>${new Date(c.createdAt).toLocaleTimeString()}</td>
+            </tr>
+          `).join('');
+        } else {
+          credBody.innerHTML = '<tr><td colspan="4" class="empty-state">No credentials enrolled yet. Use Step 1 above.</td></tr>';
+        }
+
+        // Render Audit Logs
+        const logsBody = document.getElementById('logsList');
+        if (data.logs && data.logs.length > 0) {
+          logsBody.innerHTML = data.logs.map(log => {
+            let outcomeTag = `<span class="tag tag-success">SUCCESS</span>`;
+            if (log.outcome === 'FAILURE') outcomeTag = `<span class="tag tag-fail">FAILURE</span>`;
+            if (log.outcome === 'BLOCKED_SESSION_GATE') outcomeTag = `<span class="tag tag-blocked">BLOCKED (D2)</span>`;
+
+            return `
+              <tr>
+                <td>${new Date(log.timestamp).toLocaleTimeString()}</td>
+                <td>${log.factor}</td>
+                <td>${log.ceremony}</td>
+                <td>${outcomeTag}</td>
+                <td>${log.reason || (log.signCount !== undefined ? `sign_count: ${log.signCount}` : 'OK')}</td>
+              </tr>
+            `;
+          }).join('');
+        } else {
+          logsBody.innerHTML = '<tr><td colspan="5" class="empty-state">No audit logs recorded yet.</td></tr>';
+        }
+      } catch (err) {
+        console.error('Failed to load status', err);
+      }
+    }
+
+    async function updateSessionState(state) {
+      await fetch('/api/session/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state }),
+      });
+      await loadStatus();
+    }
+
+    async function performRegistration() {
+      const toast = document.getElementById('regToast');
+      toast.className = 'status-toast';
+      try {
+        // 1. Get options from server (checks D2 session gate)
+        const optRes = await fetch('/api/webauthn/register/options', { method: 'POST' });
+        const options = await optRes.json();
+        if (!optRes.ok) {
+          throw new Error(options.error || 'Failed to fetch registration challenge');
+        }
+
+        // 2. Perform native browser biometric prompt
+        const regResponse = await startRegistration({ optionsJSON: options });
+
+        // 3. Send back to server to verify
+        const verRes = await fetch('/api/webauthn/register/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ response: regResponse }),
+        });
+        const verData = await verRes.json();
+        if (!verRes.ok) {
+          throw new Error(verData.error || 'Server rejected registration');
+        }
+
+        toast.textContent = '✅ Device biometric successfully registered!';
+        toast.className = 'status-toast success';
+        await loadStatus();
+      } catch (err) {
+        toast.textContent = `❌ ${err.message}`;
+        toast.className = 'status-toast error';
+        await loadStatus();
+      }
+    }
+
+    async function performAuthentication() {
+      const toast = document.getElementById('authToast');
+      toast.className = 'status-toast';
+      try {
+        // 1. Get options from server (checks D2 session gate)
+        const optRes = await fetch('/api/webauthn/auth/options', { method: 'POST' });
+        const options = await optRes.json();
+        if (!optRes.ok) {
+          throw new Error(options.error || 'Failed to fetch authentication challenge');
+        }
+
+        // 2. Perform native browser biometric prompt
+        const authResponse = await startAuthentication({ optionsJSON: options });
+
+        // 3. Send back to server to verify
+        const verRes = await fetch('/api/webauthn/auth/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ response: authResponse }),
+        });
+        const verData = await verRes.json();
+        if (!verRes.ok) {
+          throw new Error(verData.error || 'Server rejected authentication');
+        }
+
+        toast.textContent = `✅ Assertion verified! Counter incremented to #${verData.result.newCounter}`;
+        toast.className = 'status-toast success';
+        await loadStatus();
+      } catch (err) {
+        toast.textContent = `❌ ${err.message}`;
+        toast.className = 'status-toast error';
+        await loadStatus();
+      }
+    }
+
+    async function resetDatabase() {
+      await fetch('/api/reset', { method: 'POST' });
+      document.getElementById('regToast').className = 'status-toast';
+      document.getElementById('authToast').className = 'status-toast';
+      await loadStatus();
+    }
+
+    // Polling status
+    loadStatus();
+    setInterval(loadStatus, 3000);
+  </script>
+</body>
+</html>
