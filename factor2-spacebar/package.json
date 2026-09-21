@@ -1,0 +1,26 @@
+{
+  "name": "@tapkey/factor2-spacebar",
+  "version": "1.0.0",
+  "description": "Factor 2 spacebar tactile knowledge secret module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "demo": "concurrently -k \"vite --config vite.config.ts demo --port 5182\" \"tsx demo/server.ts\""
+  },
+  "keywords": ["authentication", "spacebar", "argon2id"],
+  "license": "MIT",
+  "dependencies": {
+    "argon2": "^0.31.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "concurrently": "^9.1.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.3.3",
+    "vite": "^5.4.14",
+    "vitest": "^1.2.0"
+  }
+}
