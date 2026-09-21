@@ -25,6 +25,7 @@ class FakeElement {
   }
 }
 
+<<<<<<< HEAD
 describe("shifted PIN capture", () => {
   it("advances through the four-digit PIN flow and emits ready state", () => {
     const element = new FakeElement();
@@ -109,5 +110,40 @@ describe("shifted PIN capture", () => {
     capture.detach();
     element.press("Space");
     expect(count).toBe(0);
+=======
+describe("spacebar capture", () => {
+  it("captures taps, ignores repeats, completes groups, and resets", () => {
+    const element = new FakeElement();
+    const completed: number[][] = [];
+    const resets: number[] = [];
+    const capture = captureTapPattern(element, {
+      mode: "COUNT",
+      onGroupCompleted: (groups) => completed.push(groups),
+      onReset: () => resets.push(1),
+    });
+
+    expect(element.press("Space").prevented).toBe(true);
+    element.press("Space", true);
+    element.press("Space");
+    element.press("Enter");
+    expect(completed).toEqual([[2]]);
+    expect(resets).toEqual([]);
+    element.press("Escape");
+    expect(resets).toHaveLength(1);
+    capture.detach();
+    element.press("Space");
+    expect(completed).toEqual([[2]]);
+  });
+
+  it("ignores unrelated keys and inactive elements", () => {
+    const element = new FakeElement();
+    const taps: number[] = [];
+    const capture = captureTapPattern(element, { mode: "COUNT", onTap: (count) => taps.push(count) });
+    element.press("KeyA");
+    expect(taps).toEqual([]);
+    capture.detach();
+    element.press("Space");
+    expect(taps).toEqual([]);
+>>>>>>> 5382501e8c22ef80dc1321e6f6ccce8ea6408a50
   });
 });

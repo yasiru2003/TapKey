@@ -4,6 +4,7 @@ Owner: W.G.T. Devindu - 230134U
 
 ## Scope
 
+<<<<<<< HEAD
 This Factor 2 module implements a four-digit tactile PIN entered with the spacebar. Each digit is entered by pressing Space between one and ten times, with a shifted mapping so that 1 tap = 0, 2 taps = 1, ..., 10 taps = 9. The module captures the four digits, converts them to a canonical `SB2|PIN|####` value, hashes it with Argon2id, and reports only PASS/FAIL for Factor 2 verification. It never creates a full session or WebAuthn flow.
 
 ## Canonical format
@@ -94,6 +95,33 @@ Sheneth owns the Accessibility Engine, live regions, and spoken announcements. T
     - 10 taps -> 9
 
 The PIN contains exactly four digits.
+=======
+This package captures and verifies a spacebar tactile knowledge secret. It supports tap-count groups and short/long rhythm patterns. It returns only a Factor 2 verification result and never creates a session, WebAuthn challenge, credential, or authenticated session.
+
+## Canonical formats
+
+Count mode encodes groups as `SB1|COUNT|3,1,4,2`.
+
+Rhythm mode compares adjacent timestamp gaps against configured threshold and tolerance and encodes only `S` and `L`, for example `SB1|RHYTHM|SLSLLSSL`. Ambiguous gaps fail validation. Raw timestamps are transient and are never persisted or included in canonical output.
+
+## Hashing and storage
+
+Enrollment hashes the canonical value with Argon2id using memory cost 19456 KiB, time cost 2, and parallelism 1. The `argon2` library generates a unique salt for every hash. Only the encoded PHC hash and non-secret mode metadata belong in `SpacebarSecret`; plaintext patterns and raw timestamps are excluded.
+
+Argon2id increases the cost of guessing but does not increase the entropy of the tactile secret.
+
+## API
+
+The public API exports `captureTapPattern`, `canonicalizeCountPattern`, `canonicalizeRhythmPattern`, `hashPattern`, `verifyPattern`, `SpacebarSecretRepository`, the in-memory repository for tests, and the relevant public types. Capture is attached to one active element and exposes callbacks for taps, completed groups, ready patterns, reset, and validation errors. It ignores auto-repeat and prevents Space scrolling while active.
+
+## Integration boundaries
+
+After `verifyPattern` returns success, Senadi creates the short-lived `PartialAuthSession` and continues to Factor 1/WebAuthn. A successful Factor 2 verification is not a complete authentication. The system orchestrator must create a short-lived PartialAuthSession and subsequently require Factor 1/WebAuthn.
+
+Hasini owns rate limiting, lockout, exponential backoff, and `LoginAttempt` logging. The verifier remains independent and should be called only after `rateLimiter.canAttempt(userId)`; the orchestrator then logs the result.
+
+Sheneth owns ARIA live regions, screen-reader announcements, audio earcons, and the accessibility engine. This package does not expose or speak the tap counts, rhythm sequence, canonical secret, or raw tactile secret.
+>>>>>>> 5382501e8c22ef80dc1321e6f6ccce8ea6408a50
 
 ## Development
 
@@ -101,6 +129,7 @@ The PIN contains exactly four digits.
 npm install
 npm test
 npm run build
+<<<<<<< HEAD
 npm run demo
 ```
 
@@ -116,3 +145,8 @@ The local demo supports a single four-digit tactile PIN entry flow.
 - Escape resets the entire PIN
 - enrollment and verification remain disabled until four digits are captured
 - the UI reports progress without revealing the raw digit values or canonical secret
+=======
+```
+
+All commands must be run from `factor2-spacebar/`. `schema.sql` is a logical database contract only and must not be run as a shared-project migration.
+>>>>>>> 5382501e8c22ef80dc1321e6f6ccce8ea6408a50

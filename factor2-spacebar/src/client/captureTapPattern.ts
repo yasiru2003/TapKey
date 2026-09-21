@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { PIN_DIGIT_COUNT } from "../shared/config.js";
 import type { ShiftedPinPattern } from "../shared/types.js";
 
@@ -5,11 +6,26 @@ export interface CaptureCallbacks {
   onDigitPrompt?: (message: string) => void;
   onDigitRecorded?: (digitIndex: number) => void;
   onPatternReady?: (pattern: ShiftedPinPattern) => void;
+=======
+import { canonicalizeCountPattern, canonicalizeRhythmPattern } from "../shared/canonicalize.js";
+import type { CountPattern, RhythmPattern, SpacebarMode } from "../shared/types.js";
+
+export interface CaptureCallbacks {
+  onTap?: (count: number) => void;
+  onGroupCompleted?: (groups: number[]) => void;
+  onPatternReady?: (pattern: CountPattern | RhythmPattern) => void;
+>>>>>>> 5382501e8c22ef80dc1321e6f6ccce8ea6408a50
   onReset?: () => void;
   onValidationError?: (error: Error) => void;
 }
 
 export interface CaptureOptions extends CaptureCallbacks {
+<<<<<<< HEAD
+=======
+  mode: SpacebarMode;
+  thresholdMs?: number;
+  toleranceMs?: number;
+>>>>>>> 5382501e8c22ef80dc1321e6f6ccce8ea6408a50
   now?: () => number;
 }
 
@@ -18,6 +34,7 @@ export interface TapPatternCapture {
   reset(): void;
 }
 
+<<<<<<< HEAD
 const PROMPTS = [
   "Enter first digit.",
   "First digit recorded. Enter second digit.",
@@ -61,6 +78,35 @@ export function captureTapPattern(
         options.onValidationError?.(
           new Error("Too many taps for this digit. Press Escape to restart."),
         );
+=======
+export function captureTapPattern(
+  element: Pick<HTMLElement, "addEventListener" | "removeEventListener">,
+  options: CaptureOptions,
+): TapPatternCapture {
+  let currentGroup = 0;
+  let groups: number[] = [];
+  let timestamps: number[] = [];
+  const now = options.now ?? (() => performance.now());
+
+  const reset = (): void => {
+    currentGroup = 0;
+    groups = [];
+    timestamps = [];
+    options.onReset?.();
+  };
+
+  const handleKeyDown = (event: KeyboardEvent): void => {
+    if (event.repeat || !["Space", "Enter", "Escape"].includes(event.code)) return;
+
+    if (event.code === "Space") {
+      event.preventDefault();
+      if (options.mode === "COUNT") {
+        currentGroup += 1;
+        options.onTap?.(currentGroup);
+      } else {
+        timestamps.push(now());
+        options.onTap?.(timestamps.length);
+>>>>>>> 5382501e8c22ef80dc1321e6f6ccce8ea6408a50
       }
       return;
     }
@@ -70,6 +116,7 @@ export function captureTapPattern(
       return;
     }
 
+<<<<<<< HEAD
     if (blocked) {
       return;
     }
@@ -104,4 +151,33 @@ export function captureTapPattern(
     detach: () => element.removeEventListener("keydown", handleKeyDown),
     reset,
   };
+=======
+    try {
+      if (options.mode === "COUNT") {
+        if (currentGroup === 0) return;
+        groups = [...groups, currentGroup];
+        currentGroup = 0;
+        options.onGroupCompleted?.([...groups]);
+        canonicalizeCountPattern(groups);
+        options.onPatternReady?.({ mode: "COUNT", groups: [...groups] });
+      } else {
+        if (options.thresholdMs === undefined || options.toleranceMs === undefined) {
+          throw new Error("Rhythm configuration is required");
+        }
+        canonicalizeRhythmPattern(timestamps, options.thresholdMs, options.toleranceMs);
+        options.onPatternReady?.({
+          mode: "RHYTHM",
+          timestamps: [...timestamps],
+          thresholdMs: options.thresholdMs,
+          toleranceMs: options.toleranceMs,
+        });
+      }
+    } catch (error) {
+      options.onValidationError?.(error instanceof Error ? error : new Error("Invalid pattern"));
+    }
+  };
+
+  element.addEventListener("keydown", handleKeyDown);
+  return { detach: () => element.removeEventListener("keydown", handleKeyDown), reset };
+>>>>>>> 5382501e8c22ef80dc1321e6f6ccce8ea6408a50
 }

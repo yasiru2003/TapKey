@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { captureTapPattern } from "../src/client/captureTapPattern.js";
 
+<<<<<<< HEAD
 type Listener = (event: KeyboardEvent) => void;
 
 class FakeElement {
@@ -57,5 +58,31 @@ describe("digit state progression", () => {
     element.press("Enter");
     expect(result).toEqual([[6, 1, 8, 3]]);
     expect(prompts.at(-1)).toBe("Fourth digit recorded. PIN ready for verification.");
+=======
+describe("rhythm capture", () => {
+  it("emits a rhythm candidate on Enter", () => {
+    const listeners: Array<(event: KeyboardEvent) => void> = [];
+    const element = {
+      addEventListener: (_type: string, listener: EventListenerOrEventListenerObject) => {
+        listeners.push(listener as (event: KeyboardEvent) => void);
+      },
+      removeEventListener: () => undefined,
+    };
+    const ready: unknown[] = [];
+    let time = 0;
+    captureTapPattern(element, {
+      mode: "RHYTHM",
+      thresholdMs: 300,
+      toleranceMs: 50,
+      now: () => time,
+      onPatternReady: (pattern) => ready.push(pattern),
+    });
+    const press = (code: string) => listeners[0]({ code, repeat: false, preventDefault: () => undefined } as KeyboardEvent);
+    press("Space");
+    time = 100;
+    press("Space");
+    press("Enter");
+    expect(ready).toEqual([{ mode: "RHYTHM", timestamps: [0, 100], thresholdMs: 300, toleranceMs: 50 }]);
+>>>>>>> 5382501e8c22ef80dc1321e6f6ccce8ea6408a50
   });
 });
