@@ -1,6 +1,4 @@
-/* =========================================================
-   TapKey Modern Accessible 2FA Protocol — Design System
-   ========================================================= */
+/* TapKey Modern Accessible 2FA Protocol — Design System */
 
 :root {
   --bg-main: #0a0e17;
@@ -876,9 +874,7 @@ body {
   text-decoration: underline;
 }
 
-/* =========================================================
-   Dashboard Styles
-   ========================================================= */
+/* Dashboard Styles */
 .dashboard-layout {
   max-width: 1000px;
   margin: 0 auto;

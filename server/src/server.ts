@@ -165,9 +165,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   try {
-    // ==========================================
-    // 1. Static Files Serving
-    // ==========================================
+    // Static asset serving
     if (req.method === 'GET' && !pathname.startsWith('/api/')) {
       let filePath = path.join(PUBLIC_DIR, pathname === '/' ? 'index.html' : pathname);
       if (!fs.existsSync(filePath)) {
@@ -193,10 +191,7 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    // ==========================================
-    // 2. Registration Flow
-    // ==========================================
-
+    // Registration Endpoints
     // Step 1: Start Registration (Claim Identity)
     if (req.method === 'POST' && pathname === '/api/register/start') {
       const body = await parseBody(req);
@@ -353,10 +348,7 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    // ==========================================
-    // 3. Login Flow (Reverse 2FA Gated Flow)
-    // ==========================================
-
+    // Authentication Endpoints (Reverse 2FA Flow)
     // Step 1: Claim Identity & Check Rate Limiting (D1)
     if (req.method === 'POST' && pathname === '/api/login/start') {
       const body = await parseBody(req);
@@ -623,9 +615,7 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    // ==========================================
-    // 4. Session & Dashboard APIs
-    // ==========================================
+    // Session Management & Telemetry Endpoints
     if (req.method === 'GET' && pathname === '/api/me') {
       const token = getSessionToken(req);
       if (!token) {
@@ -689,9 +679,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`\n======================================================`);
-  console.log(`🛡️  TapKey Unified 2FA Authentication Server running!`);
-  console.log(`📍 Web UI: http://localhost:${PORT}`);
-  console.log(`🗄️  Database: SQLite (native node:sqlite)`);
-  console.log(`======================================================\n`);
+  console.log(`TapKey Authentication Server running on http://localhost:${PORT}`);
 });

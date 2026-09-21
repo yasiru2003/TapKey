@@ -318,9 +318,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`\n======================================================`);
-  console.log(`🛡️  TapKey Factor 1 Local Test Suite running!`);
-  console.log(`📍 URL: http://localhost:${PORT}`);
-  console.log(`👤 Test User: ${testUser.username} (${testUser.id})`);
-  console.log(`======================================================\n`);
+  console.log(`Factor 1 Test Suite running on http://localhost:${PORT}`);
 });

@@ -1,10 +1,6 @@
 /**
- * TapKey Unified Frontend Application & State Manager
+ * Audio cue synthesizer for non-visual feedback (earcons).
  */
-
-// ==========================================
-// 1. Synthesized Audio Earcon Engine
-// ==========================================
 class EarconSynthesizer {
   constructor() {
     this.ctx = null;
@@ -81,9 +77,9 @@ class EarconSynthesizer {
   }
 }
 
-// ==========================================
-// 1.5 Spoken Text-To-Speech (TTS) Engine for Blind Users
-// ==========================================
+/**
+ * Spoken text-to-speech assistant using native Web Speech Synthesis.
+ */
 class TextToSpeechEngine {
   constructor() {
     this.enabled = true; // Active by default for eyes-free accessibility
@@ -167,9 +163,9 @@ class TextToSpeechEngine {
   }
 }
 
-// ==========================================
-// 1.8 Voice Input Engine (Speech Recognition & Spoken Confirmation)
-// ==========================================
+/**
+ * Speech recognition engine for hands-free voice input and confirmation.
+ */
 class VoiceInputEngine {
   constructor(app) {
     this.app = app;
@@ -304,9 +300,9 @@ class VoiceInputEngine {
   }
 }
 
-// ==========================================
-// 2. Application State Controller
-// ==========================================
+/**
+ * Main application and authentication state controller.
+ */
 class TapKeyApp {
   constructor() {
     this.earcon = new EarconSynthesizer();
@@ -508,12 +504,7 @@ class TapKeyApp {
     }
   }
 
-  // ==========================================
-  // 3. Tactile Keyboard Engine (Space, Enter, Esc)
-  // ==========================================
-  // ==========================================
-  // 3. Tactile Keyboard Engine (Space, Enter, Esc, and Direct Pad Tap)
-  // ==========================================
+  // Tactile PIN input capture & digit management
   recordTactileTap(prefix) {
     const isLogin = prefix === 'login';
     const flow = isLogin ? this.state.login : this.state.reg;
@@ -719,9 +710,7 @@ class TapKeyApp {
     this.setDigitActive(prefix, 0);
   }
 
-  // ==========================================
-  // 4. Registration Flow Handler
-  // ==========================================
+  // Registration flow handlers
   async handleRegisterStart(event) {
     event.preventDefault();
     this.hideError('reg-start-error');
@@ -880,9 +869,7 @@ class TapKeyApp {
     }
   }
 
-  // ==========================================
-  // 5. Login Flow (Reverse 2FA Sequence)
-  // ==========================================
+  // Authentication flow handlers
   async handleLoginStart(event) {
     event.preventDefault();
     this.hideError('login-start-error');
@@ -1115,9 +1102,7 @@ class TapKeyApp {
     }
   }
 
-  // ==========================================
-  // 6. Dashboard & Security Telemetry
-  // ==========================================
+  // Dashboard and session telemetry methods
   async checkCurrentSession() {
     try {
       const res = await fetch('/api/me');
