@@ -199,7 +199,7 @@ PartialAuthSession     enforced at F1        ARIA announcements
 
 > [!IMPORTANT]
 > **Core Invariant D2 (Gated Multi-Factor Authentication):**
-> An attacker with physical access to a FIDO2 platform authenticator cannot authenticate without first passing the tactile Factor 2 spacebar challenge.
+> An attacker with physical access to a FIDO2 platform authenticator can't authenticate without first passing the tactile Factor 2 spacebar challenge.
 
 * **D1 — Adaptive Rate Limiting**: Exponential backoff triggered per username and source IP upon consecutive Factor 2 failures.
 * **D2 — Reverse-Gated Enforcement**: No WebAuthn challenge generation or assertion processing without a validated `PartialAuthSession`.
