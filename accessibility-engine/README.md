@@ -9,3 +9,7 @@ The earcon player starts muted. For private audio, confirm headphones with the u
 Attach `createKeyHandler({ target, onSpace, onSubmit, onCancel })` to a dedicated tap area. It ignores editable controls, button keys, key repeats, and modified keys. `onSpace` should pass the event to Factor 2's `captureTapPattern`; this module does not interpret or verify the secret.
 
 Run `npm test` for unit tests. Run `npm run test:browser` for the Chrome flow covering username response, Space/Enter/Escape, privacy-gated tones, Factor 2 outcomes, biometric prompt, and final success. The browser test checks DOM behavior and audio scheduling; actual screen-reader speech and hardware output still require a manual device check.
+
+## Try it yourself
+
+From `accessibility-engine`, run `npm run demo` and open <http://127.0.0.1:4173/>. Tab to the keyboard area and use Space, Enter, and Escape. The response buttons simulate backend states. Use your screen reader to hear the ARIA announcements. To hear tones, connect headphones and check both private-audio boxes. Stop the server with Ctrl+C.

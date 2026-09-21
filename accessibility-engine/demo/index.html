@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TapKey accessibility demo</title>
+  <link rel="stylesheet" href="/src/liveRegion.css">
+  <style>
+    :root { color-scheme: dark; font: 18px/1.5 system-ui, sans-serif; background: #101827; color: #f5f7fb; }
+    body { max-width: 860px; margin: 2rem auto; padding: 0 1rem 3rem; }
+    h1 { line-height: 1.2; }
+    .panel { border: 1px solid #66758d; border-radius: 12px; padding: 1.2rem; margin: 1.2rem 0; }
+    label { display: block; margin: .6rem 0; }
+    input[type=text] { padding: .65rem; width: min(100%, 20rem); font: inherit; }
+    button { font: inherit; padding: .55rem .85rem; margin: .25rem; border: 2px solid #a9c6ff; border-radius: 7px; color: #fff; background: #244470; cursor: pointer; }
+    button:hover { background: #315a94; }
+    :focus-visible { outline: 4px solid #ffcf53; outline-offset: 3px; }
+    #tap-area { min-height: 7rem; display: grid; place-items: center; border: 3px dashed #a9c6ff; border-radius: 10px; padding: 1rem; text-align: center; }
+    #tap-area:focus { background: #1f3555; }
+    #current-state { font-weight: 700; }
+    .hint { color: #d5dce8; }
+    #history { max-height: 12rem; overflow: auto; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>TapKey accessibility demo</h1>
+    <p>This page simulates server responses so you can check Sheneth’s announcements, keyboard controls, and earcons. It does not verify a secret or log you in.</p>
+    <section class="panel" aria-labelledby="identity-heading">
+      <h2 id="identity-heading">1. Identity response</h2>
+      <label for="username">Username</label>
+      <input id="username" type="text" autocomplete="username">
+      <button id="acknowledge" type="button">Simulate username received</button>
+    </section>
+    <section class="panel" aria-labelledby="tap-heading">
+      <h2 id="tap-heading">2. Keyboard area</h2>
+      <p class="hint">Focus this area with Tab. Press Space to count taps, Enter to submit, or Escape to cancel.</p>
+      <div id="tap-area" tabindex="0" role="group" aria-label="Spacebar pattern area. Space taps, Enter submits, Escape cancels">Focus here for Space, Enter, Escape</div>
+      <p>Taps recorded in this demo: <output id="tap-count">0</output></p>
+      <button id="reset" type="button">Reset tap count</button>
+    </section>
+    <section class="panel" aria-labelledby="response-heading">
+      <h2 id="response-heading">3. Simulated responses</h2>
+      <p>Use these buttons to hear each screen reader announcement. Tones play only when enabled below.</p>
+      <div id="responses"></div>
+    </section>
+    <section class="panel" aria-labelledby="audio-heading">
+      <h2 id="audio-heading">4. Private audio</h2>
+      <label><input id="private-output" type="checkbox"> I confirm I am using headphones or another private audio output</label>
+      <label><input id="audio-enabled" type="checkbox"> Enable earcons</label>
+      <p id="audio-state" class="hint">Audio is off.</p>
+    </section>
+    <section class="panel" aria-labelledby="status-heading">
+      <h2 id="status-heading">Current state</h2>
+      <p id="current-state">Ready. Select a control to begin.</p>
+      <h3>Event history</h3>
+      <ol id="history"></ol>
+    </section>
+  </main>
+  <script type="module">
+    import { createLiveRegion, announceAuthState, createEarconPlayer, createKeyHandler } from '/src/index.js';
+    const region = createLiveRegion();
+    const audio = createEarconPlayer();
+    const current = document.querySelector('#current-state');
+    const history = document.querySelector('#history');
+    const privateOutput = document.querySelector('#private-output');
+    const audioEnabled = document.querySelector('#audio-enabled');
+    const audioState = document.querySelector('#audio-state');
+    const tapCount = document.querySelector('#tap-count');
+    let taps = 0;
+    function report(state, sound) {
+      announceAuthState(region, state);
+      current.textContent = region.element.textContent;
+      const item = document.createElement('li');
+      item.textContent = current.textContent;
+      history.prepend(item);
+      if (sound) audio[sound]();
+    }
+    function updateAudio() {
+      audio.setPrivateOutputConfirmed(privateOutput.checked);
+      audio.setEnabled(audioEnabled.checked);
+      audioState.textContent = audioEnabled.checked && privateOutput.checked
+        ? 'Earcons enabled for this private output.'
+        : 'Audio is off. Check both boxes to hear earcons.';
+    }
+    privateOutput.addEventListener('change', updateAudio);
+    audioEnabled.addEventListener('change', updateAudio);
+    document.querySelector('#acknowledge').addEventListener('click', () => report('identity_acknowledged'));
+    document.querySelector('#reset').addEventListener('click', () => {
+      taps = 0; tapCount.value = '0'; audio.resetTapCount();
+      current.textContent = 'Tap count reset.';
+    });
+    const states = [
+      ['Factor 2 accepted', 'factor2_success', 'success'],
+      ['Factor 2 rejected', 'factor2_failure', 'failure'],
+      ['Account locked', 'locked_out', 'failure'],
+      ['Biometric prompt', 'biometric_pending'],
+      ['Biometric cancelled', 'biometric_cancelled'],
+      ['Biometric rejected', 'biometric_failure', 'failure'],
+      ['Login successful', 'authenticated', 'success'],
+      ['Server error', 'error', 'failure'],
+    ];
+    const responses = document.querySelector('#responses');
+    for (const [label, state, sound] of states) {
+      const button = document.createElement('button');
+      button.type = 'button'; button.textContent = label;
+      button.addEventListener('click', () => report(state, sound));
+      responses.appendChild(button);
+    }
+    createKeyHandler({ target: document.querySelector('#tap-area'),
+      onSpace: () => { taps += 1; tapCount.value = String(taps); report('pattern_ready', 'tap'); },
+      onSubmit: () => report('factor2_pending'),
+      onCancel: () => report('biometric_cancelled'),
+    });
+  </script>
+</body>
+</html>

@@ -5,6 +5,7 @@
   "exports": "./src/index.js",
   "scripts": {
     "test": "node --test",
-    "test:browser": "node tests/browser-flow.check.js"
+    "test:browser": "node tests/browser-flow.check.js",
+    "demo": "node demo/server.js"
   }
 }
