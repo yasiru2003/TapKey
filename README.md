@@ -51,37 +51,37 @@ Traditional multi-factor authentication systems pose major usability barriers fo
 ### 🗺️ Connection Architecture
 
 ```mermaid
-graph TD
-    User([👤 User]) <-->|Visual / Non-Visual Interaction| UI[🖥️ Client Web UI]
-    UI <-->|ARIA Announcements & Earcons| AE[🔊 Accessibility Engine<br/><b>Sheneth</b>]
+flowchart TD
+    User(["User (Client)"]) <-->|"Visual / Non-Visual Interaction"| UI["Client Web UI"]
+    UI <-->|"ARIA Announcements & Earcons"| AE["Accessibility Engine<br/>(Sheneth)"]
     
-    UI -->|(1) Identity Claim| Server[🌐 Login Orchestration Server<br/><b>Senadi</b>]
-    Server -->|Acknowledge Username| AE
+    UI -->|"1. Identity Claim"| Server["Login Orchestration Server<br/>(Senadi)"]
+    Server -->|"Acknowledge Username"| AE
 
-    UI -->|(2) Spacebar Tap Pattern| F2[⌨️ Factor 2 Verifier<br/><b>Thashira</b>]
-    F2 <-->|Compare Argon2id Hash| DB_Secret[(SpacebarSecret DB)]
+    UI -->|"2. Spacebar Tap Pattern"| F2["Factor 2 Verifier<br/>(Thashira)"]
+    F2 <-->|"Compare Argon2id Hash"| DB_Secret[("SpacebarSecret DB")]
     
-    F2 -->|Attempt Result| SecLog[🛡️ Security Hardening & Rate Limiter<br/><b>Hasini</b>]
-    SecLog <--> DB_Log[(LoginAttempt DB)]
-    SecLog -->|Lockout if Exceeded (D1)| UI
+    F2 -->|"Attempt Result"| SecLog["Security Hardening & Rate Limiter<br/>(Hasini)"]
+    SecLog <--> DB_Log[("LoginAttempt DB")]
+    SecLog -->|"Lockout Response (D1)"| UI
     
-    F2 -->|On Success| Gate[🎟️ PartialAuthSession Manager<br/><b>Senadi</b>]
-    Gate <--> DB_Session[(PartialAuthSession DB)]
+    F2 -->|"On Success"| Gate["PartialAuthSession Manager<br/>(Senadi)"]
+    Gate <--> DB_Session[("PartialAuthSession DB")]
     
-    Gate -->|Gate Token (5 min)| UI
-    UI -->|(3) Request Assertion| F1[🔐 Factor 1 Verifier<br/><b>Yasiru</b>]
-    F1 <-->|Validate Active Session Gate (D2)| Gate
+    Gate -->|"Gate Token (5 min)"| UI
+    UI -->|"3. Request Assertion"| F1["Factor 1 Verifier<br/>(Yasiru)"]
+    F1 <-->|"Validate Active Session Gate (D2)"| Gate
     
-    F1 -.->|Biometric Challenge| Auth[📲 Platform Authenticator<br/>Hardware / TouchID / FIDO2]
-    Auth <-->|Biometric Gesture| User
-    Auth -->|Signed Assertion| F1
+    F1 -.->|"Biometric Challenge"| Auth["Platform Authenticator<br/>(Hardware / TouchID / FIDO2)"]
+    Auth <-->|"Biometric Gesture"| User
+    Auth -->|"Signed Assertion"| F1
     
-    F1 <-->|Verify Public Key & Counter| DB_Cred[(WebAuthnCredential DB)]
-    F1 -->|Attempt Status| SecLog
+    F1 <-->|"Verify Public Key & Counter"| DB_Cred[("WebAuthnCredential DB")]
+    F1 -->|"Attempt Status"| SecLog
     
-    F1 -->|Promotion Granted| Server
-    Server -->|Promote to Full Auth Session| UI
-    Server -->|Login Success Event| AE
+    F1 -->|"Promotion Granted"| Server
+    Server -->|"Promote to Full Auth Session"| UI
+    Server -->|"Login Success Event"| AE
 ```
 
 ---
@@ -213,14 +213,14 @@ PartialAuthSession     enforced at F1        ARIA announcements
 The repository is protected by automated GitHub Actions CI/CD workflows executing on all Pull Requests and pushes to `main`:
 
 ```mermaid
-graph LR
-    A[Push / PR] --> B[Static Analysis & Linter]
-    B --> C[Unit Tests: F1, F2, A11y, Security]
-    C --> D[Integration Test: Full Flow & D2 Gate Check]
-    D --> E[Dependency & Secret Scan]
-    E --> F[Artifact Build Verification]
-    F --> G{Branch Protection Gate}
-    G -->|All Passed + 1 Review| H[Merge to main]
+flowchart LR
+    A["Push / PR"] --> B["Static Analysis & Linter"]
+    B --> C["Unit Tests (F1, F2, A11y, Security)"]
+    C --> D["Integration Test (Full Flow & D2 Gate Check)"]
+    D --> E["Dependency & Secret Scan"]
+    E --> F["Artifact Build Verification"]
+    F --> G{"Branch Protection Gate"}
+    G -->|"All Passed & Approved"| H["Merge to main"]
 ```
 
 - **Code Quality**: ESLint / Prettier code style and syntax checks.
