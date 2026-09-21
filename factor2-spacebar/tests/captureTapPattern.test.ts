@@ -25,7 +25,6 @@ class FakeElement {
   }
 }
 
-<<<<<<< HEAD
 describe("shifted PIN capture", () => {
   it("advances through the four-digit PIN flow and emits ready state", () => {
     const element = new FakeElement();
@@ -35,7 +34,9 @@ describe("shifted PIN capture", () => {
     const capture = captureTapPattern(element, {
       onDigitPrompt: (message) => prompts.push(message),
       onDigitRecorded: (digitIndex) => recorded.push(digitIndex),
-      onPatternReady: (pattern) => ready.push(pattern.tapCounts),
+      onPatternReady: (pattern) => {
+        if ("tapCounts" in pattern) ready.push(pattern.tapCounts);
+      },
     });
 
     expect(prompts[0]).toBe("Enter first digit.");
@@ -110,8 +111,10 @@ describe("shifted PIN capture", () => {
     capture.detach();
     element.press("Space");
     expect(count).toBe(0);
-=======
-describe("spacebar capture", () => {
+  });
+});
+
+describe("spacebar capture in COUNT mode", () => {
   it("captures taps, ignores repeats, completes groups, and resets", () => {
     const element = new FakeElement();
     const completed: number[][] = [];
@@ -144,6 +147,5 @@ describe("spacebar capture", () => {
     capture.detach();
     element.press("Space");
     expect(taps).toEqual([]);
->>>>>>> 5382501e8c22ef80dc1321e6f6ccce8ea6408a50
   });
 });

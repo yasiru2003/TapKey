@@ -7,12 +7,8 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
-<<<<<<< HEAD
     "test:watch": "vitest",
     "demo": "concurrently -k \"vite --config vite.config.ts demo --port 5182\" \"tsx demo/server.ts\""
-=======
-    "test:watch": "vitest"
->>>>>>> 5382501e8c22ef80dc1321e6f6ccce8ea6408a50
   },
   "keywords": ["authentication", "spacebar", "argon2id"],
   "license": "MIT",
@@ -21,14 +17,10 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
-<<<<<<< HEAD
     "concurrently": "^9.1.2",
     "tsx": "^4.19.2",
     "typescript": "^5.3.3",
     "vite": "^5.4.14",
-=======
-    "typescript": "^5.3.3",
->>>>>>> 5382501e8c22ef80dc1321e6f6ccce8ea6408a50
     "vitest": "^1.2.0"
   }
 }

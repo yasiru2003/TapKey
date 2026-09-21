@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { captureTapPattern } from "../src/client/captureTapPattern.js";
 
-<<<<<<< HEAD
 type Listener = (event: KeyboardEvent) => void;
 
 class FakeElement {
@@ -29,7 +28,9 @@ describe("digit state progression", () => {
     const result: number[][] = [];
     captureTapPattern(element, {
       onDigitPrompt: (message) => prompts.push(message),
-      onPatternReady: (pattern) => result.push(pattern.tapCounts),
+      onPatternReady: (pattern) => {
+        if ("tapCounts" in pattern) result.push(pattern.tapCounts);
+      },
     });
 
     expect(prompts[0]).toBe("Enter first digit.");
@@ -58,7 +59,9 @@ describe("digit state progression", () => {
     element.press("Enter");
     expect(result).toEqual([[6, 1, 8, 3]]);
     expect(prompts.at(-1)).toBe("Fourth digit recorded. PIN ready for verification.");
-=======
+  });
+});
+
 describe("rhythm capture", () => {
   it("emits a rhythm candidate on Enter", () => {
     const listeners: Array<(event: KeyboardEvent) => void> = [];
@@ -83,6 +86,5 @@ describe("rhythm capture", () => {
     press("Space");
     press("Enter");
     expect(ready).toEqual([{ mode: "RHYTHM", timestamps: [0, 100], thresholdMs: 300, toleranceMs: 50 }]);
->>>>>>> 5382501e8c22ef80dc1321e6f6ccce8ea6408a50
   });
 });

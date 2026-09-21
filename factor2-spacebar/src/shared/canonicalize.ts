@@ -1,10 +1,15 @@
-<<<<<<< HEAD
 import {
   MAX_TAPS_PER_DIGIT,
   MIN_TAPS_PER_DIGIT,
   PIN_DIGIT_COUNT,
+  MAX_TAPS_PER_GROUP,
 } from "./config.js";
-import { InvalidPinPatternError } from "./errors.js";
+import {
+  AmbiguousRhythmError,
+  InvalidCountPatternError,
+  InvalidPinPatternError,
+  InvalidRhythmPatternError,
+} from "./errors.js";
 
 export function canonicalizeShiftedPin(tapCounts: readonly number[]): string {
   if (!Array.isArray(tapCounts) || tapCounts.length !== PIN_DIGIT_COUNT) {
@@ -23,13 +28,7 @@ export function canonicalizeShiftedPin(tapCounts: readonly number[]): string {
 
   const digits = tapCounts.map((tapCount) => String(tapCount - 1)).join("");
   return `SB2|PIN|${digits}`;
-=======
-import { MAX_TAPS_PER_GROUP } from "./config.js";
-import {
-  AmbiguousRhythmError,
-  InvalidCountPatternError,
-  InvalidRhythmPatternError,
-} from "./errors.js";
+}
 
 export function canonicalizeCountPattern(groups: readonly number[]): string {
   if (!Array.isArray(groups) || groups.length === 0) {
@@ -79,5 +78,4 @@ export function canonicalizeRhythmPattern(
   });
 
   return `SB1|RHYTHM|${sequence.join("")}`;
->>>>>>> 5382501e8c22ef80dc1321e6f6ccce8ea6408a50
 }

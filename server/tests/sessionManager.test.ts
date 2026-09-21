@@ -9,7 +9,7 @@ describe('PartialAuthSession lifecycle', () => {
 
     expect(created.session.expiresAt.getTime() - now.getTime()).toBe(PARTIAL_SESSION_TTL_MS);
     expect(await store.validate(created.token, 'user-1', now)).toMatchObject({ isValid: true, userId: 'user-1' });
-    expect(await store.validatePartialSession(created.token, 'user-1')).toMatchObject({ isValid: true });
+    expect(await store.validatePartialSession(created.token, 'user-1', now)).toMatchObject({ isValid: true });
   });
 
   it('rejects a different user and expires at the TTL boundary', async () => {

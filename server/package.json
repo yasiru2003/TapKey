@@ -5,10 +5,18 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "test": "vitest run"
+    "test": "vitest run",
+    "start": "tsx src/server.ts",
+    "dev": "tsx watch src/server.ts"
+  },
+  "dependencies": {
+    "@simplewebauthn/server": "^10.0.0",
+    "@simplewebauthn/types": "^10.0.0",
+    "argon2": "^0.31.2"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "tsx": "^4.19.2",
     "typescript": "^5.3.3",
     "vitest": "^1.2.0"
   }

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-<<<<<<< HEAD
-import { canonicalizeShiftedPin } from "../src/shared/canonicalize.js";
+import {
+  canonicalizeCountPattern,
+  canonicalizeRhythmPattern,
+  canonicalizeShiftedPin,
+} from "../src/shared/canonicalize.js";
 
 describe("shifted PIN canonicalization", () => {
   it("encodes the shifted PIN deterministically", () => {
@@ -22,8 +25,8 @@ describe("shifted PIN canonicalization", () => {
     [Number.NaN, 1, 1, 1],
   ])("rejects %j", (tapCounts) => {
     expect(() => canonicalizeShiftedPin(tapCounts)).toThrow();
-=======
-import { canonicalizeCountPattern, canonicalizeRhythmPattern } from "../src/shared/canonicalize.js";
+  });
+});
 
 describe("count canonicalization", () => {
   it("encodes count groups deterministically", () => {
@@ -57,6 +60,5 @@ describe("rhythm canonicalization", () => {
     expect(() => canonicalizeRhythmPattern([0, 100], 0, 0)).toThrow();
     expect(() => canonicalizeRhythmPattern([0, 100], 300, -1)).toThrow();
     expect(() => canonicalizeRhythmPattern([0, 100], 300, 300)).toThrow();
->>>>>>> 5382501e8c22ef80dc1321e6f6ccce8ea6408a50
   });
 });

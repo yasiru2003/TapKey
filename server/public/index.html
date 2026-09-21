@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TapKey — Accessible Two-Factor Authentication Protocol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./style.css" />
+  <!-- SimpleWebAuthn Browser bundle -->
+  <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+</head>
+<body>
+  <!-- Accessibility Live Regions (Screen Readers) -->
+  <div id="aria-live-polite" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  <div id="aria-live-assertive" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+  <!-- App Shell -->
+  <div class="app-layout">
+    <!-- Navbar -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="brand-icon">🛡️</div>
+        <div>
+          <span class="brand-title">TapKey</span>
+          <span class="brand-sub">Accessible 2FA</span>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <button id="nav-login" class="nav-btn active" onclick="app.navigate('login')">Login</button>
+        <button id="nav-register" class="nav-btn" onclick="app.navigate('register')">Register</button>
+        <button id="nav-dashboard" class="nav-btn hidden" onclick="app.navigate('dashboard')">Dashboard</button>
+        <button id="nav-logs" class="nav-btn" onclick="app.navigate('logs')">Security Telemetry</button>
+      </nav>
+
+      <div class="header-actions">
+        <div id="header-user-badge" class="header-user-badge hidden">
+          <span class="user-pill-avatar" id="header-user-avatar">U</span>
+          <span class="user-pill-name" id="header-user-name">User</span>
+          <button class="btn-user-logout" onclick="app.handleLogout()" title="Log out session">Logout</button>
+        </div>
+        <button id="tts-toggle" class="icon-toggle active" aria-label="Toggle Spoken Text-to-Speech Voice" title="Toggle Voice Reader (TTS for Blind / Low Vision Users)">
+          <span id="tts-icon">🗣️</span>
+        </button>
+        <button id="audio-toggle" class="icon-toggle" aria-label="Toggle Earcon Sound Cues" title="Toggle Sound Feedback">
+          <span id="audio-icon">🔊</span>
+        </button>
+        <button id="contrast-toggle" class="icon-toggle" aria-label="Toggle High Contrast Mode" title="Toggle High Contrast Mode">
+          <span>👁️</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Dynamic Content Container -->
+    <main class="main-content">
+      
+      <!-- ============================================== -->
+      <!-- 1. LOGIN PAGE VIEW -->
+      <!-- ============================================== -->
+      <section id="page-login" class="page-view active">
+        <div class="auth-card">
+          <!-- Stepper -->
+          <div class="stepper">
+            <div class="step-node active" id="login-stepnode-1">
+              <span class="step-num">1</span>
+              <span class="step-label">Claim</span>
+            </div>
+            <div class="step-line" id="login-stepline-1"></div>
+            <div class="step-node" id="login-stepnode-2">
+              <span class="step-num">2</span>
+              <span class="step-label">Tactile F2</span>
+            </div>
+            <div class="step-line" id="login-stepline-2"></div>
+            <div class="step-node" id="login-stepnode-3">
+              <span class="step-num">3</span>
+              <span class="step-label">Session Gate</span>
+            </div>
+            <div class="step-line" id="login-stepline-3"></div>
+            <div class="step-node" id="login-stepnode-4">
+              <span class="step-num">4</span>
+              <span class="step-label">WebAuthn F1</span>
+            </div>
+          </div>
+
+          <!-- Step 1: Claim Identity -->
+          <div id="login-step-1" class="step-pane active">
+            <div class="pane-header">
+              <h2>Welcome Back</h2>
+              <p class="pane-desc">Enter or speak your username to begin reverse-gated 2FA.</p>
+            </div>
+            <form id="form-login-start" onsubmit="app.handleLoginStart(event)">
+              <div class="form-group">
+                <div class="label-row">
+                  <label for="login-username">Username</label>
+                  <button type="button" id="btn-voice-login-user" class="btn-voice" onclick="app.startVoiceInput('login-username', 'login')" title="Speak username into microphone" aria-label="Use voice input for username">
+                    <span class="mic-icon">🎤</span>
+                    <span id="txt-voice-login-user" class="voice-btn-text">Voice Input</span>
+                  </button>
+                </div>
+                <input type="text" id="login-username" class="form-input" placeholder="e.g. yasiru2003" required autocomplete="username" autofocus />
+                <div id="voice-status-login" class="voice-status-msg hidden"></div>
+              </div>
+              <div id="login-start-error" class="alert-box error hidden"></div>
+              <button type="submit" id="btn-login-start" class="btn btn-primary btn-block">
+                <span>Continue to Factor 2</span>
+                <span class="btn-arrow">→</span>
+              </button>
+            </form>
+            <div class="pane-footer">
+              <span>New to TapKey?</span>
+              <a href="#/register" onclick="app.navigate('register')">Create an account</a>
+            </div>
+          </div>
+
+          <!-- Step 2: Factor 2 Spacebar Challenge -->
+          <div id="login-step-2" class="step-pane">
+            <div class="pane-header">
+              <div class="badge badge-purple">Factor 2 — Tactile Spacebar</div>
+              <h2>Enter Tactile Secret</h2>
+              <p id="f2-login-prompt" class="pane-desc">Click the capture area below or press Space. Enter 4 digits (Space taps + Enter per digit).</p>
+            </div>
+
+            <!-- Interactive Tactile Capture Button -->
+            <button id="login-capture-area" class="tactile-capture-pad" type="button" aria-label="Tactile Spacebar Input Pad. Tap Spacebar and Enter.">
+              <div class="pad-halo"></div>
+              <div class="pad-icon">⌨️</div>
+              <div class="pad-main-text">TAP SPACEBAR HERE</div>
+              <div id="login-pad-status" class="pad-sub-text">Click pad or press Spacebar to tap (1-10)</div>
+              <div class="pad-ripple-container"></div>
+            </button>
+
+            <!-- Digits Progress Indicator -->
+            <div class="digit-indicators">
+              <div class="digit-box" id="login-d1">
+                <span class="digit-num">D1</span>
+                <span class="digit-dots" id="login-dots-1">○</span>
+              </div>
+              <div class="digit-box" id="login-d2">
+                <span class="digit-num">D2</span>
+                <span class="digit-dots" id="login-dots-2">○</span>
+              </div>
+              <div class="digit-box" id="login-d3">
+                <span class="digit-num">D3</span>
+                <span class="digit-dots" id="login-dots-3">○</span>
+              </div>
+              <div class="digit-box" id="login-d4">
+                <span class="digit-num">D4</span>
+                <span class="digit-dots" id="login-dots-4">○</span>
+              </div>
+            </div>
+
+            <div class="keyboard-hints">
+              <span class="hint-item"><kbd>Space</kbd> Tap count</span>
+              <span class="hint-item"><kbd>Enter</kbd> Confirm digit</span>
+              <span class="hint-item"><kbd>Esc</kbd> Reset PIN</span>
+            </div>
+
+            <div id="login-f2-error" class="alert-box error hidden"></div>
+
+            <div class="button-group">
+              <button id="btn-login-f2-reset" class="btn btn-secondary" onclick="app.resetLoginCapture()">Reset</button>
+              <button id="btn-login-f2-verify" class="btn btn-primary" disabled onclick="app.submitLoginFactor2()">
+                <span>Verify Factor 2</span>
+                <span class="btn-arrow">→</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 3: Session Gate Established -->
+          <div id="login-step-3" class="step-pane">
+            <div class="pane-header">
+              <div class="badge badge-success">Design Invariant D2 Active</div>
+              <h2>Session Gate Established</h2>
+              <p class="pane-desc">Factor 2 passed! An ephemeral 5-minute gate token has been created in SQLite.</p>
+            </div>
+
+            <div class="gate-timer-card">
+              <div class="timer-icon">⏳</div>
+              <div class="timer-details">
+                <div class="timer-label">PartialAuthSession TTL</div>
+                <div id="gate-countdown" class="timer-value">05:00</div>
+              </div>
+              <div class="timer-status">ACTIVE</div>
+            </div>
+
+            <div class="gate-token-preview">
+              <span class="preview-label">Ephemeral Gate Token (SHA-256 hashed in DB):</span>
+              <code id="gate-token-display">token_abc...</code>
+            </div>
+
+            <button id="btn-proceed-f1" class="btn btn-primary btn-block" onclick="app.startFactor1Ceremony()">
+              <span>Trigger WebAuthn / Biometric (F1)</span>
+              <span class="btn-arrow">→</span>
+            </button>
+          </div>
+
+          <!-- Step 4: WebAuthn Biometric Ceremony -->
+          <div id="login-step-4" class="step-pane">
+            <div class="pane-header">
+              <div class="badge badge-cyan">Factor 1 — WebAuthn FIDO2</div>
+              <h2>Biometric Gesture Required</h2>
+              <p class="pane-desc">Your browser will now prompt for platform biometric authentication (TouchID, Windows Hello, or Passkey).</p>
+            </div>
+
+            <div class="biometric-visual">
+              <div class="fingerprint-scan">
+                <div class="scan-line"></div>
+                <span class="fingerprint-icon">🪪</span>
+              </div>
+              <p id="f1-status-msg" class="f1-status">Waiting for biometric touch gesture...</p>
+            </div>
+
+            <div id="login-f1-error" class="alert-box error hidden"></div>
+
+            <div class="button-group" style="margin-top:1.25rem;">
+              <button id="btn-back-to-f2" class="btn btn-secondary btn-block hidden" onclick="app.setLoginStep(2); app.resetLoginCapture();">
+                <span>← Re-enter Factor 2 PIN</span>
+              </button>
+              <button id="btn-retry-f1" class="btn btn-primary btn-block hidden" onclick="app.startFactor1Ceremony()">
+                <span>Retry Biometric Prompt</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- 2. REGISTER PAGE VIEW -->
+      <!-- ============================================== -->
+      <section id="page-register" class="page-view">
+        <div class="auth-card">
+          <!-- Stepper -->
+          <div class="stepper">
+            <div class="step-node active" id="reg-stepnode-1">
+              <span class="step-num">1</span>
+              <span class="step-label">Profile</span>
+            </div>
+            <div class="step-line" id="reg-stepline-1"></div>
+            <div class="step-node" id="reg-stepnode-2">
+              <span class="step-num">2</span>
+              <span class="step-label">Set F2 Secret</span>
+            </div>
+            <div class="step-line" id="reg-stepline-2"></div>
+            <div class="step-node" id="reg-stepnode-3">
+              <span class="step-num">3</span>
+              <span class="step-label">Enroll F1</span>
+            </div>
+            <div class="step-line" id="reg-stepline-3"></div>
+            <div class="step-node" id="reg-stepnode-4">
+              <span class="step-num">4</span>
+              <span class="step-label">Done</span>
+            </div>
+          </div>
+
+          <!-- Step 1: Account Info -->
+          <div id="reg-step-1" class="step-pane active">
+            <div class="pane-header">
+              <h2>Create Your 2FA Account</h2>
+              <p class="pane-desc">Enroll in the accessible reverse-gated multi-factor protocol.</p>
+            </div>
+            <form id="form-reg-start" onsubmit="app.handleRegisterStart(event)">
+              <div class="form-group">
+                <div class="label-row">
+                  <label for="reg-username">Username</label>
+                  <button type="button" id="btn-voice-reg-user" class="btn-voice" onclick="app.startVoiceInput('reg-username', 'reg')" title="Speak username into microphone" aria-label="Use voice input for username">
+                    <span class="mic-icon">🎤</span>
+                    <span id="txt-voice-reg-user" class="voice-btn-text">Voice Input</span>
+                  </button>
+                </div>
+                <input type="text" id="reg-username" class="form-input" placeholder="e.g. yasiru2003" required />
+                <div id="voice-status-reg-user" class="voice-status-msg hidden"></div>
+              </div>
+              <div class="form-group">
+                <div class="label-row">
+                  <label for="reg-display-name">Display Name</label>
+                  <button type="button" id="btn-voice-reg-name" class="btn-voice" onclick="app.startVoiceInput('reg-display-name', 'reg')" title="Speak display name into microphone" aria-label="Use voice input for display name">
+                    <span class="mic-icon">🎤</span>
+                    <span id="txt-voice-reg-name" class="voice-btn-text">Voice Input</span>
+                  </button>
+                </div>
+                <input type="text" id="reg-display-name" class="form-input" placeholder="e.g. Yasiru Dev" required />
+                <div id="voice-status-reg-name" class="voice-status-msg hidden"></div>
+              </div>
+              <div id="reg-start-error" class="alert-box error hidden"></div>
+              <button type="submit" id="btn-reg-start" class="btn btn-primary btn-block">
+                <span>Next: Setup Factor 2</span>
+                <span class="btn-arrow">→</span>
+              </button>
+            </form>
+            <div class="pane-footer">
+              <span>Already registered?</span>
+              <a href="#/login" onclick="app.navigate('login')">Sign in here</a>
+            </div>
+          </div>
+
+          <!-- Step 2: Set Factor 2 Tactile Secret -->
+          <div id="reg-step-2" class="step-pane">
+            <div class="pane-header">
+              <div class="badge badge-purple">Factor 2 Enrollment</div>
+              <h2>Define Tactile Spacebar Secret</h2>
+              <p id="f2-reg-prompt" class="pane-desc">Set your 4-digit tactile PIN using Spacebar taps (1 tap = 0, 2 taps = 1, etc.).</p>
+            </div>
+
+            <!-- Interactive Tactile Capture Button -->
+            <button id="reg-capture-area" class="tactile-capture-pad" type="button" aria-label="Registration Tactile Input Pad. Tap Spacebar and Enter for each digit.">
+              <div class="pad-halo"></div>
+              <div class="pad-icon">⌨️</div>
+              <div class="pad-main-text">TAP SPACEBAR TO ENROLL</div>
+              <div id="reg-pad-status" class="pad-sub-text">Click pad or press Spacebar to tap (1-10)</div>
+              <div class="pad-ripple-container"></div>
+            </button>
+
+            <!-- Digits Progress Indicator -->
+            <div class="digit-indicators">
+              <div class="digit-box" id="reg-d1">
+                <span class="digit-num">D1</span>
+                <span class="digit-dots" id="reg-dots-1">○</span>
+              </div>
+              <div class="digit-box" id="reg-d2">
+                <span class="digit-num">D2</span>
+                <span class="digit-dots" id="reg-dots-2">○</span>
+              </div>
+              <div class="digit-box" id="reg-d3">
+                <span class="digit-num">D3</span>
+                <span class="digit-dots" id="reg-dots-3">○</span>
+              </div>
+              <div class="digit-box" id="reg-d4">
+                <span class="digit-num">D4</span>
+                <span class="digit-dots" id="reg-dots-4">○</span>
+              </div>
+            </div>
+
+            <div class="keyboard-hints">
+              <span class="hint-item"><kbd>Space</kbd> Tap count</span>
+              <span class="hint-item"><kbd>Enter</kbd> Confirm digit</span>
+              <span class="hint-item"><kbd>Esc</kbd> Reset PIN</span>
+            </div>
+
+            <div id="reg-f2-error" class="alert-box error hidden"></div>
+
+            <div class="button-group">
+              <button id="btn-reg-f2-reset" class="btn btn-secondary" onclick="app.resetRegCapture()">Reset</button>
+              <button id="btn-reg-f2-save" class="btn btn-primary" disabled onclick="app.submitRegisterFactor2()">
+                <span>Save Tactile Secret (Argon2id)</span>
+                <span class="btn-arrow">→</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 3: Enroll WebAuthn Passkey -->
+          <div id="reg-step-3" class="step-pane">
+            <div class="pane-header">
+              <div class="badge badge-cyan">Factor 1 Enrollment</div>
+              <h2>Register WebAuthn Biometric</h2>
+              <p class="pane-desc">Create your hardware-backed cryptographic passkey on this device.</p>
+            </div>
+
+            <div class="biometric-visual">
+              <div class="fingerprint-scan">
+                <div class="scan-line"></div>
+                <span class="fingerprint-icon">🔐</span>
+              </div>
+              <p id="reg-f1-status-msg" class="f1-status">Ready to register platform authenticator.</p>
+            </div>
+
+            <div id="reg-f1-error" class="alert-box error hidden"></div>
+
+            <button id="btn-reg-f1-trigger" class="btn btn-primary btn-block" onclick="app.startWebAuthnRegistration()">
+              <span>Create Biometric Passkey</span>
+              <span class="btn-arrow">→</span>
+            </button>
+          </div>
+
+          <!-- Step 4: Registration Success -->
+          <div id="reg-step-4" class="step-pane">
+            <div class="success-card">
+              <div class="success-icon">🎉</div>
+              <h2>Registration Complete!</h2>
+              <p class="pane-desc">Your 2FA credentials (Argon2id Spacebar + WebAuthn FIDO2 Passkey) have been successfully saved to SQLite.</p>
+              <button class="btn btn-primary btn-block" onclick="app.navigate('login')">
+                <span>Go to Login</span>
+                <span class="btn-arrow">→</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- 3. AUTHENTICATED DASHBOARD VIEW -->
+      <!-- ============================================== -->
+      <section id="page-dashboard" class="page-view">
+        <div class="dashboard-layout">
+          <!-- User Profile Card -->
+          <div class="dashboard-header-card">
+            <div class="user-info">
+              <div class="avatar" id="dash-avatar">👤</div>
+              <div>
+                <h1 id="dash-display-name">Authenticated User</h1>
+                <p id="dash-username" class="username-tag">@username</p>
+              </div>
+            </div>
+            <div class="session-badge">
+              <span class="pulse-dot"></span>
+              <span>Full Authenticated Session Active</span>
+              <button class="btn btn-sm btn-danger" onclick="app.handleLogout()">Logout</button>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <!-- Factor 2 Status -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-icon">⌨️</span>
+                <h3>Factor 2: Tactile Spacebar Secret</h3>
+              </div>
+              <div class="card-body">
+                <div class="status-row">
+                  <span class="status-key">Algorithm</span>
+                  <span class="status-val badge badge-purple">Argon2id PHC</span>
+                </div>
+                <div class="status-row">
+                  <span class="status-key">Entropy Protection</span>
+                  <span class="status-val">Memory-Hard Hash (19 MiB)</span>
+                </div>
+                <div class="status-row">
+                  <span class="status-key">Lockout Defense</span>
+                  <span class="status-val badge badge-success">D1 Exponential Backoff</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Factor 1 Status -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-icon">🪪</span>
+                <h3>Factor 1: WebAuthn / FIDO2 Passkeys</h3>
+              </div>
+              <div class="card-body">
+                <div id="credentials-list" class="credentials-container">
+                  <p class="muted">Loading registered passkeys...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Security Invariant Test Area -->
+          <div class="card invariant-card">
+            <div class="card-header">
+              <span class="card-icon">⚡</span>
+              <h3>Security Invariant D2 Gate Verification</h3>
+            </div>
+            <div class="card-body">
+              <p class="muted">
+                <strong>Design Choice D2 Test:</strong> Attempting to call the Factor 1 WebAuthn authentication endpoint directly without presenting a valid, unexpired <code>PartialAuthSession</code> token will immediately be rejected with <code>SESSION_GATE_REJECTED</code>.
+              </p>
+              <div class="invariant-actions">
+                <button class="btn btn-secondary" onclick="app.testD2BypassAttack()">
+                  <span>Simulate D2 Gate Bypass Attack</span>
+                </button>
+                <div id="d2-attack-result" class="attack-result-box hidden"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Audit Logs -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-icon">📜</span>
+              <h3>Recent Security Audit Logs (LoginAttempt Table)</h3>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="audit-table">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Factor</th>
+                      <th>Ceremony</th>
+                      <th>Outcome</th>
+                      <th>Reason / Detail</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashboard-audit-logs">
+                    <tr><td colspan="5" class="text-center muted">Loading logs...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- 4. SECURITY TELEMETRY LOGS VIEW -->
+      <!-- ============================================== -->
+      <section id="page-logs" class="page-view">
+        <div class="telemetry-layout">
+          <div class="section-title-row">
+            <div>
+              <h2>🛡️ Real-Time Security Telemetry Monitor</h2>
+              <p class="muted">Live audit stream of all factor evaluations, rate limiter locks, and session gate activities stored in SQLite.</p>
+            </div>
+            <button class="btn btn-secondary" onclick="app.loadLogs()">Refresh Telemetry</button>
+          </div>
+
+          <div class="card">
+            <div class="table-responsive">
+              <table class="audit-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>User ID</th>
+                    <th>Factor</th>
+                    <th>Ceremony</th>
+                    <th>Outcome</th>
+                    <th>Reason / Details</th>
+                  </tr>
+                </thead>
+                <tbody id="telemetry-logs-body">
+                  <tr><td colspan="6" class="text-center muted">Loading telemetry...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

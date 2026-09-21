@@ -22,7 +22,7 @@ export interface PartialSessionValidationResult {
 export interface PartialAuthSessionStore {
   create(userId: string, now?: Date): Promise<{ session: PartialAuthSession; token: string }>;
   validate(token: string, userId: string, now?: Date): Promise<PartialSessionValidationResult>;
-  validatePartialSession(token: string, userId: string): Promise<PartialSessionValidationResult>;
+  validatePartialSession(token: string, userId: string, now?: Date): Promise<PartialSessionValidationResult>;
   expire(token: string, now?: Date): Promise<boolean>;
   consume(token: string, now?: Date): Promise<boolean>;
 }
@@ -68,8 +68,8 @@ export class InMemoryPartialAuthSessionStore implements PartialAuthSessionStore 
     return { isValid: true, expiresAt: session.expiresAt, userId: session.userId };
   }
 
-  async validatePartialSession(token: string, userId: string): Promise<PartialSessionValidationResult> {
-    return this.validate(token, userId);
+  async validatePartialSession(token: string, userId: string, now = new Date()): Promise<PartialSessionValidationResult> {
+    return this.validate(token, userId, now);
   }
 
   async expire(token: string, now = new Date()): Promise<boolean> {

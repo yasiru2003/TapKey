@@ -1,0 +1,78 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                 String               @id @default(uuid())
+  username           String               @unique
+  email              String?              @unique
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  spacebarSecret     SpacebarSecret?
+  webAuthnCredentials WebAuthnCredential[]
+  partialSessions    PartialAuthSession[]
+  loginAttempts      LoginAttempt[]
+}
+
+model SpacebarSecret {
+  userId        String   @id
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode          String   // 'COUNT' | 'RHYTHM' | 'PIN'
+  schemeVersion String   // 'SB1' | 'SB2'
+  argon2idPhc   String
+  expectedUnits Int?
+  expectedDigits Int?
+  thresholdMs   Int?
+  toleranceMs   Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model WebAuthnCredential {
+  id          String    @id // Base64url credential ID
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  publicKey   Bytes
+  signCount   Int       @default(0)
+  backedUp    Boolean   @default(false)
+  transports  String?   // JSON-serialized transports array
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime?
+
+  @@index([userId])
+}
+
+model PartialAuthSession {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String   @unique
+  status      String   @default("ACTIVE") // 'ACTIVE' | 'EXPIRED' | 'CONSUMED'
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model LoginAttempt {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  factor      String   // 'FACTOR_1_WEBAUTHN' | 'FACTOR_2_SPACEBAR' | 'RECOVERY'
+  ceremony    String?  // 'AUTHENTICATION' | 'REGISTRATION'
+  outcome     String   // 'SUCCESS' | 'FAILURE' | 'BLOCKED_SESSION_GATE' | 'RATE_LIMITED'
+  reason      String?
+  signCount   Int?
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([ipAddress, timestamp])
+}
