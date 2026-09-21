@@ -6,7 +6,7 @@
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions%20Enforced-purple.svg)](#cicd-pipeline)
 
 > **A reverse-gated, accessible Two-Factor Authentication (2FA) protocol engineered specifically for visually impaired users.**
-> TapKey enforces a strict sequence: a tactile spacebar secret verified with **Argon2id** creates a short-lived session gate, followed by a hardware-backed **WebAuthn / FIDO2** biometric ceremony. The entire experience operates seamlessly eyes-free using ARIA live regions and audio earcons.
+> TapKey enforces a strict sequence: a tactile spacebar secret verified with *Argon2id* creates a short-lived session gate, followed by a hardware-backed **WebAuthn / FIDO2** biometric ceremony. The entire experience operates seamlessly eyes-free using ARIA live regions and audio earcons.
 
 ---
 
