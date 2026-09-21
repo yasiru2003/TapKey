@@ -17,76 +17,203 @@ The **Factor 1** module provides hardware-backed FIDO2 / WebAuthn biometric auth
 
 ---
 
-## 📦 API Surface & Exports
+## 🏗️ Architectural Flow for Login Orchestration
 
-### 1. Server-Side APIs
+```mermaid
+flowchart TD
+    Client["Client Web UI"] -->|"1. Request Factor 1 Challenge"| S1["Senadi: POST /api/auth/factor1/challenge"]
+    S1 -->|"Validate D2 Session Gate & Build Challenge"| Y1["Yasiru: generateAuthenticationChallenge()"]
+    Y1 -->|"WebAuthn Options"| Client
+    
+    Client -->|"2. Send Signed Biometric Assertion"| S2["Senadi: POST /api/auth/factor1/verify"]
+    S2 -->|"Verify Signature & sign_count"| Y2["Yasiru: verifyAuthenticationAssertion()"]
+    Y2 -->|"Verified OK + newCounter"| S2
+    
+    S2 -->|"3. Promote to Full Authenticated Session"| DB[("Full Session DB / JWT")]
+    S2 -->|"Login Success Event"| Client
+```
+
+---
+
+## 📦 API Surface & Exports
 
 ```typescript
 import {
+  // Server-side Ceremonies
   generateRegistrationChallenge,
   verifyRegistrationResponse,
   generateAuthenticationChallenge,
   verifyAuthenticationAssertion,
   assertSessionGateActive,
+
+  // Client-side Browser Wrappers
+  checkBrowserWebAuthnSupport,
+  checkPlatformAuthenticatorAvailable,
+  performClientRegistrationCeremony,
+  performClientAuthenticationCeremony,
+
+  // Types & Errors
+  type StoredWebAuthnCredential,
+  type WebAuthnUser,
+  type SessionGateValidator,
+  type AuditLogger,
+  type WebAuthnServerConfig,
+  SessionGateError,
+  WebAuthnVerificationError,
 } from '@tapkey/factor1-webauthn';
 ```
 
-#### `generateRegistrationChallenge(params)`
-- **Purpose**: Generates WebAuthn registration options for platform authenticators.
-- **Parameters**: `user`, `sessionToken`, `gateValidator`, `existingCredentials`, `config`, `auditLogger`.
-- **Throws**: `SessionGateError` (if session invalid), `WebAuthnVerificationError`.
-
-#### `verifyRegistrationResponse(params)`
-- **Purpose**: Cryptographically verifies client attestation and returns the newly registered credential.
-- **Returns**: `{ verified: true, credential: StoredWebAuthnCredential }`.
-
-#### `generateAuthenticationChallenge(params)`
-- **Purpose**: Generates WebAuthn authentication challenge for enrolled user credentials.
-- **Parameters**: `user`, `sessionToken`, `gateValidator`, `userCredentials`, `config`, `auditLogger`.
-
-#### `verifyAuthenticationAssertion(params)`
-- **Purpose**: Cryptographically verifies the signature against stored public key bytes and checks `sign_count`.
-- **Returns**: `{ verified: true, credentialId: string, updatedSignCount: number, newCounter: number }`.
-
 ---
 
-## 🤝 Integration Contracts for Teammates
+## 🛠️ Step-by-Step Server Integration Guide (For Senadi)
 
-### For Senadi (`/server/`) — Session Gate Hook
+### 1. Implement the `SessionGateValidator` (D2 Enforcement)
+Senadi connects his `PartialAuthSession` database table to Yasiru's D2 gate validator:
+
 ```typescript
 import type { SessionGateValidator } from '@tapkey/factor1-webauthn';
 
 export const sessionGateValidator: SessionGateValidator = {
   async validatePartialSession(sessionToken: string, userId: string) {
-    // 1. Query PartialAuthSession table
-    // 2. Verify expiry (TTL <= 300s) and user match
-    return { isValid: true, userId };
+    const session = await prisma.partialAuthSession.findUnique({
+      where: { token: sessionToken },
+    });
+
+    if (!session || session.userId !== userId) {
+      return { isValid: false, reason: 'SESSION_NOT_FOUND' };
+    }
+
+    // Enforce 5-minute expiry (TTL <= 300s)
+    if (session.expiresAt < new Date()) {
+      return { isValid: false, reason: 'SESSION_EXPIRED' };
+    }
+
+    return { isValid: true, userId, expiresAt: session.expiresAt };
   },
 };
 ```
 
-### For Hasini (`/security/`) — Audit Logging Hook
+---
+
+### 2. Implement the `AuditLogger` (For Hasini's Module)
+Connects to the `LoginAttempt` table:
+
 ```typescript
 import type { AuditLogger, AuditLogEntry } from '@tapkey/factor1-webauthn';
 
 export const auditLogger: AuditLogger = {
   async logAttempt(entry: AuditLogEntry) {
-    // Write entry to LoginAttempt table
+    await prisma.loginAttempt.create({
+      data: {
+        userId: entry.userId,
+        factor: entry.factor,
+        ceremony: entry.ceremony,
+        outcome: entry.outcome,
+        reason: entry.reason,
+        signCount: entry.signCount,
+        ipAddress: entry.ipAddress,
+        userAgent: entry.userAgent,
+        createdAt: entry.timestamp || new Date(),
+      },
+    });
   },
 };
+```
+
+---
+
+### 3. Expose Server Endpoints in Express / Fastify
+
+#### Endpoint A: Issue Factor 1 Authentication Challenge
+```typescript
+app.post('/api/auth/factor1/challenge', async (req, res) => {
+  try {
+    const { userId, partialSessionToken } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const userCredentials = await prisma.webAuthnCredential.findMany({
+      where: { userId },
+    });
+
+    const options = await generateAuthenticationChallenge({
+      user: { id: user.id, username: user.username },
+      sessionToken: partialSessionToken,
+      gateValidator: sessionGateValidator,
+      userCredentials,
+      config: webAuthnConfig,
+      auditLogger,
+    });
+
+    // Store challenge in temporary session state for verification
+    req.session.currentChallenge = options.challenge;
+
+    return res.json(options);
+  } catch (err) {
+    if (err instanceof SessionGateError) {
+      return res.status(403).json({ error: err.message, code: err.code });
+    }
+    return res.status(400).json({ error: err.message });
+  }
+});
+```
+
+#### Endpoint B: Verify Biometric Assertion & Promote Session
+```typescript
+app.post('/api/auth/factor1/verify', async (req, res) => {
+  try {
+    const { userId, partialSessionToken, assertionResponse } = req.body;
+
+    const storedCredential = await prisma.webAuthnCredential.findUnique({
+      where: { id: assertionResponse.id },
+    });
+
+    if (!storedCredential) {
+      return res.status(404).json({ error: 'Credential not found' });
+    }
+
+    const result = await verifyAuthenticationAssertion({
+      user: { id: userId, username: req.user.username },
+      response: assertionResponse,
+      expectedChallenge: req.session.currentChallenge,
+      storedCredential,
+      sessionToken: partialSessionToken,
+      gateValidator: sessionGateValidator,
+      config: webAuthnConfig,
+      auditLogger,
+    });
+
+    // 1. Update sign counter in DB (anti-replay invariant)
+    await prisma.webAuthnCredential.update({
+      where: { id: storedCredential.id },
+      data: { signCount: result.newCounter, lastUsedAt: new Date() },
+    });
+
+    // 2. Promote to Full Authenticated Session
+    const fullSession = await createFullAuthenticatedSession(userId);
+
+    return res.json({ success: true, session: fullSession });
+  } catch (err) {
+    if (err instanceof SessionGateError) {
+      return res.status(403).json({ error: err.message, code: err.code });
+    }
+    return res.status(400).json({ error: err.message });
+  }
+});
 ```
 
 ---
 
 ## 🧪 Local Testing & Verification
 
-### Running Automated Unit Tests
+### Run Automated Tests
 ```bash
+cd factor1-webauthn
 npm test
 ```
 
-### Running Standalone Interactive Test Server
+### Run Standalone Interactive Browser Demo
 ```bash
+cd factor1-webauthn
 npm run demo
-# Access interactive UI at http://localhost:8085
+# Access interactive dashboard at http://localhost:8085
 ```
