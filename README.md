@@ -132,7 +132,7 @@ TapKey/
 │   └── tests/
 ├── accessibility-engine/        # 🔊 Eyes-Free & ARIA Accessibility Engine
 │   ├── src/
-│   │   ├── liveRegion.ts        # ARIA Live Region announcements manager
+│   │   ├── liveRegion.ts        # ARIA Live  Region announcements manager
 │   │   ├── earconPlayer.ts      # Web Audio earcon synthesized sound cues
 │   │   └── keyHandler.ts        # Pure keyboard event orchestration (Space/Enter/Esc)
 │   └── tests/
