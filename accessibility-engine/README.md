@@ -8,4 +8,4 @@ The earcon player starts muted. For private audio, confirm headphones with the u
 
 Attach `createKeyHandler({ target, onSpace, onSubmit, onCancel })` to a dedicated tap area. It ignores editable controls, button keys, key repeats, and modified keys. `onSpace` should pass the event to Factor 2's `captureTapPattern`; this module does not interpret or verify the secret.
 
-Run `npm test` in this directory.
+Run `npm test` for unit tests. Run `npm run test:browser` for the Chrome flow covering username response, Space/Enter/Escape, privacy-gated tones, Factor 2 outcomes, biometric prompt, and final success. The browser test checks DOM behavior and audio scheduling; actual screen-reader speech and hardware output still require a manual device check.
