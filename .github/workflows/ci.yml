@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  factor1-webauthn:
+    name: Factor 1 WebAuthn Tests & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'factor1-webauthn/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./factor1-webauthn
+        run: npm ci
+
+      - name: Build TypeScript
+        working-directory: ./factor1-webauthn
+        run: npm run build
+
+      - name: Run Test Suite
+        working-directory: ./factor1-webauthn
+        run: npm test

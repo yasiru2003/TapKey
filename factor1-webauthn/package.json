@@ -1,0 +1,30 @@
+{
+  "name": "@tapkey/factor1-webauthn",
+  "version": "1.0.0",
+  "description": "Factor 1 (WebAuthn / FIDO2) biometric authentication and D2 session gate enforcement module for TapKey",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "webauthn",
+    "fido2",
+    "accessibility",
+    "two-factor-authentication",
+    "security"
+  ],
+  "author": "Yasiru (230076R)",
+  "license": "MIT",
+  "dependencies": {
+    "@simplewebauthn/browser": "^10.0.0",
+    "@simplewebauthn/server": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  }
+}
