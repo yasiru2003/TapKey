@@ -1,0 +1,29 @@
+{
+  "name": "@tapkey/security",
+  "version": "1.0.0",
+  "description": "Security hardening, rate limiting (D1), audit logging, recovery (D6), and security hygiene (D7) module for TapKey",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "rate-limiting",
+    "audit-logger",
+    "security",
+    "recovery",
+    "csrf",
+    "tapkey"
+  ],
+  "author": "Hasini (230143V)",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  }
+}
