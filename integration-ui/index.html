@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TapKey integrated test UI</title>
+  <link rel="stylesheet" href="/a11y/liveRegion.css">
+  <style>
+    :root { color-scheme: dark; font: 18px/1.5 system-ui,sans-serif; background: #101827; color: #f5f7fb; }
+    body { max-width: 850px; margin: 2rem auto; padding: 0 1rem 3rem; }
+    section { border: 1px solid #78869b; border-radius: 12px; padding: 1rem 1.3rem; margin: 1rem 0; }
+    button,input { font: inherit; } button { margin: .25rem; padding: .55rem .8rem; border: 2px solid #aac6ff; border-radius: 7px; background: #244470; color: white; cursor: pointer; }
+    input[type=text] { padding: .5rem; } label { display: block; margin: .5rem 0; }
+    :focus-visible { outline: 4px solid #ffcf53; outline-offset: 3px; }
+    #capture { padding: 1.2rem; min-height: 4rem; border: 3px dashed #aac6ff; border-radius: 8px; }
+    #capture:focus { background: #1c3556; } #status { font-weight: bold; }
+    .note { color: #d2dae6; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>TapKey integrated test UI</h1>
+    <p class="note">Local test data is in memory. Factor 2 runs from the clean <code>Thashira</code> branch because <code>temp_main</code> contains unresolved merge markers. The server, WebAuthn, and accessibility modules run from <code>temp_main</code>.</p>
+    <section><h2>1. Username</h2><label for="username">Username</label><input id="username" type="text" autocomplete="username"><button id="start" type="button">Start login</button></section>
+    <section><h2>2. Spacebar secret</h2><p>Tab to the capture area. For each of four groups, tap Space one or more times and press Enter. Escape resets the pattern.</p><div id="capture" tabindex="0" role="group" aria-label="Spacebar secret capture: Space taps, Enter ends a group, Escape resets">Focus here to tap</div><p id="progress">0 of 4 groups recorded</p><button id="enroll" type="button">Enroll this pattern</button><button id="verify" type="button">Verify Factor 2</button></section>
+    <section><h2>3. Device biometric</h2><p>After Factor 2 succeeds, register a device once, then authenticate. Browser and device support for WebAuthn is required.</p><button id="register" type="button">Register device</button><button id="authenticate" type="button">Authenticate</button></section>
+    <section><h2>Audio privacy</h2><label><input id="private-output" type="checkbox"> I confirm a private audio output is connected</label><label><input id="audio-enabled" type="checkbox"> Enable earcons</label></section>
+    <section><h2>Status</h2><p id="status">Ready. Enter a username to begin.</p></section>
+  </main>
+  <script src="/webauthn.js"></script>
+  <script type="module" src="/client.js"></script>
+</body>
+</html>
